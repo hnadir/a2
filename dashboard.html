@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<head>
+<title>Dashboard</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.17/angular.min.js"></script>
+<style>
+#koibhi{
+color:red;
+padding-top:40px;
+padding-left:10%;
+}
+</style>
+
+<STYLE TYPE="text/css">
+#calendarTable > TD
+{
+font-family: sans;
+text-align:center;
+border: 1px solid black;
+  }
+  
+TH 
+{
+font-family: sans-serif;
+text-align:center;
+border: 1px solid black;
+  }
+
+#calendarTable{
+background-color:white;
+ border-collapse: collapse;
+ color:black;
+ border: 2px solid black;
+ font-family: sans;
+overflow:hidden;
+}
+
+p{
+font-family: sans;
+overflow:hidden;
+color:black;
+}
+</STYLE>
+<style type="text/css">
+      html, body {
+        background-color: white;
+        font-family: tahoma;
+        font-size: 90%;
+        height: 100%;
+        width: 100%;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      td {
+        text-align: center;
+      }
+      #container {
+        height: 100%;
+        vertical-align: middle;
+        width: 100%;
+      }
+      #clock {
+        fill: white;
+        stroke: black;
+        stroke-linecap: round;
+      }
+      #h_pointer, #surface{
+        stroke-width: 1.5px;
+      }
+      #s_pointer {
+        stroke-width: 1px;
+		stroke: red;
+      }
+      #delimiters, #m_pointer {
+        stroke-width: 1px;
+      }
+      #numbers {
+        font-family: sans;
+        font-size: 80%;
+      }
+    </style>
+<style>
+html, body {
+	height:100%;
+	margin:auto;
+	box-sizing:border-box;
+}
+
+.rectangle{
+	height:100%;
+	width:26%;
+	background-color:yellow;
+	float:left;
+}
+.spaces{
+	height:100%;
+	width:7%;
+	float:left;
+}
+
+/* Grow Shadow */
+.hvr-grow-shadow {
+  display: inline-block;
+  vertical-align: middle;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-transition-duration: 0.5s;
+  transition-duration: 0.5s;
+  -webkit-transition-property: box-shadow, transform;
+  transition-property: box-shadow, transform;
+}
+.hvr-grow-shadow:hover, .hvr-grow-shadow:focus, .hvr-grow-shadow:active {
+  box-shadow: 0 10px 10px -10px rgba(0, 0, 0, 0.5);
+  -webkit-transform: scale(1.1);
+  transform: scale(1.1);
+}
+
+.flipped {
+  -webkit-transform:rotateY(180deg);
+  -moz-transform:rotateY(180deg);
+  -ms-transform:rotateY(180deg);
+  -o-transform:rotateY(180deg);
+  transform:rotateY(180deg);
+}
+
+.flipper {
+transition: 0.6s;
+transform-style: preserve-3d;
+
+position: relative;
+}
+
+/* hide back of pane during swap */
+.front, .back {
+backface-visibility: hidden;
+
+position: absolute;
+top: 0;
+left: 0;
+}
+
+/* front pane, placed above back */
+.front {
+z-index: 2;
+}
+
+/* back, initially hidden pane */
+.back {
+transform: rotateY(180deg);
+}
+
+/* entire container, keeps perspective */
+.flip-container {
+perspective: 1000;
+}
+
+/* flip the pane when hovered */
+.flip-container:hover .flipper, .flip-container.hover .flipper {
+    transform: rotateY(180deg);
+}
+
+.flip-container, .front, .back {
+width: 320px;
+height: 480px;
+}
+
+/*.front, .back {
+width: 100%;
+height: 100%;
+}*/
+</style>
+<script language="javascript" type="text/javascript">
+      function timerTick() {
+        with (new Date()) {
+          var h, m, s;
+          
+          h = 30 * ((getHours() % 12) + getMinutes() / 60);
+          m = 6 * getMinutes();
+          s = 6 * getSeconds();
+
+          document.getElementById('h_pointer').setAttribute('transform', 'rotate(' + h + ', 50, 50)');
+          document.getElementById('m_pointer').setAttribute('transform', 'rotate(' + m + ', 50, 50)'); 
+          document.getElementById('s_pointer').setAttribute('transform', 'rotate(' + s + ', 50, 50)');
+          
+          setTimeout(timerTick, 1000);
+        }
+      }
+    </script>
+
+<SCRIPT LANGUAGE="JavaScript">
+/*******************
+  UTILITY FUNCTIONS
+********************/
+// day of week of month's first day
+function getFirstDay(theYear, theMonth){
+    var firstDate = new Date(theYear,theMonth,1)
+    return firstDate.getDay()
+}
+// number of days in the month
+function getMonthLen(theYear, theMonth) {
+    var oneDay = 1000 * 60 * 60 * 24
+    var thisMonth = new Date(theYear, theMonth, 1)
+    var nextMonth = new Date(theYear, theMonth + 1, 1)
+    var len = Math.ceil((nextMonth.getTime() - 
+        thisMonth.getTime())/oneDay)
+    return len
+}
+// create array of English month names
+var theMonths = ["January","February","March","April","May","June","July","August",
+"September","October","November","December"]
+// return IE4+ or W3C DOM reference for an ID
+function getObject(obj) {
+    var theObj
+    if (document.all) {
+        if (typeof obj == "string") {
+            return document.all(obj)
+        } else {
+            return obj.style
+        }
+    }	
+
+    if (document.getElementById) {
+        if (typeof obj == "string") {
+            return document.getElementById(obj)
+        } else {
+            return obj.style
+        }
+    }
+	
+	
+	
+    return null
+}
+
+/************************
+  DRAW CALENDAR CONTENTS
+*************************/
+// clear and re-populate table based on form's selections
+function populateTable(form) {
+    var theMonth = form.chooseMonth.selectedIndex
+    var theYear = parseInt(form.chooseYear.options[form.chooseYear.selectedIndex].text)
+    // initialize date-dependent variables
+    var firstDay = getFirstDay(theYear, theMonth)
+    var howMany = getMonthLen(theYear, theMonth)
+    
+    // fill in month/year in table header
+    getObject("tableHeader").innerHTML = theMonths[theMonth] + 
+    " " + theYear
+    
+    // initialize vars for table creation
+    var dayCounter = 1
+    var TBody = getObject("tableBody")
+    // clear any existing rows
+    while (TBody.rows.length > 0) {
+        TBody.deleteRow(0)
+    }
+    var newR, newC
+    var done=false
+	var red=false
+    while (!done) {
+        // create new row at end
+        newR = TBody.insertRow(TBody.rows.length)
+        for (var i = 0; i < 7; i++) {
+            // create new cell at end of row
+            newC = newR.insertCell(newR.cells.length)
+            if (TBody.rows.length == 1 && i < firstDay) {
+                // no content for boxes before first day
+                newC.innerHTML = ""    
+                continue
+            }
+            if (dayCounter == howMany) {
+                // no more rows after this one
+                done = true
+            }
+            // plug in date (or empty for boxes after last day)
+            newC.innerHTML = (dayCounter <= howMany) ? dayCounter++ : ""
+			
+			if(red){
+				newC.style.color = "red";
+				red=false;
+				}
+			var d = new Date();
+			var h = d.toDateString().split(" ");
+			if(dayCounter==h[2])
+				red=true;
+			
+        }
+        
+    }
+}
+
+/*******************
+  INITIALIZATIONS
+********************/
+// create dynamic list of year choices
+function fillYears() {
+    var today = new Date();
+    var thisYear = today.getFullYear();
+    var yearChooser = document.dateChooser.chooseYear;
+    for (i = thisYear; i < thisYear + 5; i++) {
+        yearChooser.options[yearChooser.options.length] = new Option(i, i)
+    }
+    setCurrMonth(today)
+}
+// set month choice to current month
+function setCurrMonth(today) {
+    document.dateChooser.chooseMonth.selectedIndex = today.getMonth()
+}
+</SCRIPT>
+
+<script>
+	var app = angular.module("demo", []);
+	var d = new Date();
+	var months = ['January','Febuary','March','April','May','June','July','August', 'September','October','November', 'December'];
+	var weeks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+	app.controller("calendarDemo", function($scope) {
+		$scope.day = {m:d.getMonth(), y:d.getFullYear(), dayy:d.getDay(), number: d.getDate(),
+		display: function() {
+			var dateObject;
+			dateObject = $scope.day;
+			return weeks[dateObject.dayy] + ", " + months[dateObject.m] + " " + dateObject.number + ", " + dateObject.y;
+		}
+	};
+
+	$scope.blah = {
+		getFirstDay: function(theYear, theMonth){
+		var firstDate = new Date(theYear,theMonth,1)
+		return firstDate.getDay()
+	},
+	
+	// number of days in the month
+	getMonthLen: function(theYear, theMonth) {
+		var oneDay = 1000 * 60 * 60 * 24
+		var thisMonth = new Date(theYear, theMonth, 1)
+		var nextMonth = new Date(theYear, theMonth + 1, 1)
+		var len = Math.ceil((nextMonth.getTime() - thisMonth.getTime())/oneDay)
+		return len
+	}
+
+	// return IE4+ or W3C DOM reference for an ID
+	,getObject: function(obj) {
+    var theObj
+		if (document.all) {
+			if (typeof obj == "string") {
+				return document.all(obj)
+			} 
+			else {
+				return obj.style
+			}
+		}
+		if (document.getElementById) {
+			if (typeof obj == "string") {
+				return document.getElementById(obj)
+			}
+			else {
+            return obj.style
+			}
+		}
+    return null
+	},
+	
+	populateTable: function() {
+    // initialize date-dependent variables
+		var theYear=$scope.day.y;
+		var theMonth=$scope.day.m;
+		var firstDay = $scope.blah.getFirstDay(theYear, theMonth)
+		var howMany = $scope.blah.getMonthLen(theYear, theMonth)
+    
+		// fill in month/year in table header
+		$scope.blah.getObject("tableHeader").innerHTML = months[theMonth] + " " + theYear
+    
+		// initialize vars for table creation
+		var dayCounter = 1
+		var TBody = $scope.blah.getObject("tableBody")
+		// clear any existing rows
+		while (TBody.rows.length > 0) {
+			TBody.deleteRow(0)
+		}
+		
+		var newR, newC
+		var done=false
+		while (!done) {
+        // create new row at end
+			newR = TBody.insertRow(TBody.rows.length)
+			for (var i = 0; i < 7; i++) {
+            // create new cell at end of row
+            newC = newR.insertCell(newR.cells.length)
+            if (TBody.rows.length == 1 && i < firstDay) {
+                // no content for boxes before first day
+                newC.innerHTML = ""    
+                continue
+            }
+            if (dayCounter == howMany) {
+                // no more rows after this one
+                done = true
+            }
+            // plug in date (or empty for boxes after last day)
+            newC.innerHTML = (dayCounter <= howMany) ? 
+                dayCounter++ : ""
+			}
+        
+		}
+	}
+		
+	}//end scope.blah
+	
+	console.log($scope.day);
+	});//end app.controller
+
+
+
+	app.factory('weatherService', ['$http', '$q', function ($http, $q){
+		function getWeather () {
+			var deferred = $q.defer();
+			$http.get('https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22islamabad%2C%20capital%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys')
+          .success(function(data){
+            deferred.resolve(data.query.results.channel);
+          })
+          .error(function(err){
+            console.log('Error retrieving markets');
+            deferred.reject(err);
+          });
+        return deferred.promise;
+      }
+      
+		return {
+			getWeather: getWeather
+		};
+    }]);
+	
+	app.controller('weatherCtrl', ['$scope', 'weatherService', function($scope, weatherService) {
+		function fetchWeather() {
+			weatherService.getWeather().then(function(data){
+			$scope.place = data;
+        }); 
+		}
+      
+    fetchWeather();
+    }]);
+</script>
+
+</head>
+
+<body ng-app="demo" onload='timerTick(); fillYears(); populateTable(document.dateChooser);'>
+<div style="width:100%; height:10%; background-color:white"></div>
+<div style="width:100%; height:80%; background-color:white">
+	<div class="spaces" style="width:9.5%"></div>
+	
+	<div class="flip-container rectangle hvr-grow-shadow">
+		<div ng-controller="weatherCtrl" class="flipper" onclick="this.classList.toggle('flipped')">
+			<div class="front" style="font-size: 60px; display: flex;  flex-direction: row;  flex-wrap: wrap;  justify-content: center;  align-items: center;">
+				<div>{{ place.location.city }}</div>
+          <div>{{ ((place.item.condition.temp-32)*5)/9 | number:0}}&deg;&nbsp; </div>
+		  <div> | {{ place.item.condition.text }}</div>
+			</div>
+			<div class="back" style="background-color:orange;">
+				<div ng-repeat="forecast in place.item.forecast" id="koibhi">
+					<div style="font-size:15px">{{ forecast.date }} - {{ forecast.text }}</div>
+					<div style="color:black"><b>H:</b> {{ ((forecast.high - 32)*5)/9 | number:0}}&deg; <font style="color:red">|</font> <b>L:</b> {{ ((forecast.low-32)*5)/9 | number:0}}&deg; </div>		
+				</div>
+			</div>
+		</div>
+	</div>	
+	
+	<div class="spaces" style="width:4%;"></div>
+		
+	<div class="flip-container rectangle hvr-grow-shadow">
+		<div class="flipper" onclick="this.classList.toggle('flipped')">
+			<div class="front" style="font-size: 60px; display: flex;  flex-direction: row;  flex-wrap: wrap;  justify-content: center;  align-items: center;">
+			
+				<div id="hour"></div>:<div id="minute"></div>:<div id="sec"></div>&nbsp;<div id="ampm"></div>
+				
+			</div>
+			<div class="back" style="background-color:orange">
+				<table id='container'>
+      <tr>
+        <td>
+          <svg id='clock' viewBox='0 0 100 100' width='200' height='200'>
+            <circle id='surface' cx='50' cy='50' r='45'/>
+            <g id='pointers'>
+              <line id='h_pointer' x1='50' y1='50' x2='50' y2='27' />
+              <line id='m_pointer' x1='50' y1='50' x2='50' y2='17' />
+              <line id='s_pointer' x1='50' y1='50' x2='50' y2='13' />
+            </g>
+            <g id='numbers'>
+              <text x='43' y='18'>12</text>
+              <text x='85' y='54'>3</text>
+              <text x='47' y='91'>6</text>
+              <text x='9' y='54'>9</text>
+            </g>
+          </svg>
+        </td>
+      </tr>
+    </table>
+			</div>
+		</div>
+	</div>	
+		
+	<div class="spaces" style="width:4%;"></div>
+	
+	<div class="flip-container rectangle hvr-grow-shadow">
+		<div class="flipper" onclick="this.classList.toggle('flipped')">
+			<div class="front" style="font-size: 60px; display: flex;  flex-direction: row;  flex-wrap: wrap;  justify-content: center;  align-items: center;">
+				<div id="tareekh"></div>&nbsp;<div id="mahina"></div>&nbsp;'<div id="saal"></div><div id="dinn"></div>
+			</div>
+			<div class="back" style="background-color:orange; display: flex;  flex-direction: row;  flex-wrap: wrap;  justify-content: center;  align-items: center;">
+				<TABLE ID="calendarTable" BORDER=2 ALIGN="center">
+<TR>
+    <TH ID="tableHeader" COLSPAN=7></TH>
+</TR>
+<TR><TH>&nbsp;Sun&nbsp;</TH><TH>&nbsp;Mon&nbsp;</TH><TH>&nbsp;Tue&nbsp;</TH><TH>&nbsp;Wed&nbsp;</TH>
+<TH>&nbsp;Thu&nbsp;</TH><TH>&nbsp;Fri&nbsp;</TH><TH>&nbsp;Sat&nbsp;</TH></TR>
+<TBODY ID="tableBody"></TBODY>
+<TR>
+    <TD COLSPAN=7>
+    <FORM NAME="dateChooser">
+        <SELECT NAME="chooseMonth" style="color:black; background-color:white;border: 2px solid black;" 
+        onChange="populateTable(this.form)">
+            <OPTION SELECTED>January<OPTION>February
+            <OPTION>March<OPTION>April<OPTION>May
+            <OPTION>June<OPTION>July<OPTION>August
+            <OPTION>September<OPTION>October
+            <OPTION>November<OPTION>December
+    </SELECT>
+    <SELECT NAME="chooseYear" style="color:black; background-color:white;border: 2px solid black; margin:10px" onChange="populateTable(this.form)">
+    </SELECT>
+    </FORM>
+    </TD>
+</TR>
+</TABLE>
+			</div>
+		</div>
+	</div>
+		
+	<div class="spaces"></div>
+</div>	
+<div style="width:100%; height:10%; background-color:white"></div>
+
+<script>
+var d = new Date();
+var h = d.toDateString().split(" ");
+document.getElementById("dinn").innerHTML = h[0];
+document.getElementById("mahina").innerHTML = h[1];
+document.getElementById("tareekh").innerHTML = h[2];
+document.getElementById("saal").innerHTML = h[3].substring(2,4);
+
+function startTime() {
+        var date = new Date();
+        var hours = (date.getHours() > 12 ? date.getHours() - 12 : date.getHours());
+        var am_pm = date.getHours() >= 12 ? "PM" : "AM";
+        hours = hours < 10 ? "0" + hours : hours;
+        var minutes = (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes());
+        var seconds = (date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds());
+		
+        document.getElementById('hour').innerHTML = hours;
+		document.getElementById('minute').innerHTML = minutes;
+		document.getElementById('sec').innerHTML = seconds;
+		document.getElementById('ampm').innerHTML = am_pm;
+        t = setTimeout(function () {
+            startTime()
+        }, 500);
+    }
+    startTime();
+</script>
+
+
+
+</body>
